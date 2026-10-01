@@ -1,5 +1,12 @@
 -- H2（MODE=MySQL）下的对照册领域测试库；列与 doc/schema/adr.sql 对齐。
 DROP TABLE IF EXISTS t_adr_report_row;
+DROP TABLE IF EXISTS t_sys_notice_user;
+DROP TABLE IF EXISTS t_sys_notice;
+DROP TABLE IF EXISTS t_sys_user;
+DROP TABLE IF EXISTS t_adr_cycle_notice;
+DROP TABLE IF EXISTS t_adr_cycle_send;
+DROP TABLE IF EXISTS t_adr_cycle_calendar;
+DROP TABLE IF EXISTS t_adr_cycle_task;
 DROP TABLE IF EXISTS t_adr_check_booklet;
 DROP TABLE IF EXISTS t_adr_check_period;
 DROP TABLE IF EXISTS t_adr_term_card;
@@ -93,6 +100,81 @@ CREATE TABLE t_adr_check_booklet (
   CONSTRAINT uk_batch_live UNIQUE (batch_no, void_flag)
 );
 
+CREATE TABLE t_adr_cycle_task (
+  id bigint PRIMARY KEY,
+  item_no varchar(64),
+  site_no varchar(64),
+  biz_type varchar(32),
+  due_at datetime,
+  amount decimal(12,2),
+  ref_doc varchar(128),
+  contact_mobile varchar(32),
+  watcher_no varchar(64),
+  sent_at datetime,
+  fail_reason varchar(255),
+  withdraw_at datetime,
+  content varchar(255),
+  status int,
+  del_flag int DEFAULT 0,
+  create_by varchar(64),
+  create_time datetime,
+  update_by varchar(64),
+  update_time datetime,
+  remark varchar(500)
+);
+CREATE INDEX idx_cycle_status_due ON t_adr_cycle_task (status, del_flag, due_at);
+
+CREATE TABLE t_adr_cycle_send (
+  id bigint PRIMARY KEY,
+  round_no varchar(64) NOT NULL,
+  item_id bigint NOT NULL,
+  item_no varchar(64),
+  site_no varchar(64),
+  action varchar(16) NOT NULL,
+  status_after int,
+  acted_at datetime,
+  note varchar(255),
+  del_flag int DEFAULT 0,
+  create_by varchar(64),
+  create_time datetime,
+  update_by varchar(64),
+  update_time datetime,
+  remark varchar(500)
+);
+CREATE INDEX idx_send_round ON t_adr_cycle_send (round_no);
+CREATE INDEX idx_send_item ON t_adr_cycle_send (item_id);
+
+CREATE TABLE t_adr_cycle_notice (
+  id bigint PRIMARY KEY,
+  send_id bigint NOT NULL,
+  item_id bigint NOT NULL,
+  channel varchar(16) NOT NULL,
+  delivered int NOT NULL DEFAULT 0,
+  delivered_at datetime,
+  target varchar(128),
+  fail_note varchar(255),
+  del_flag int DEFAULT 0,
+  create_by varchar(64),
+  create_time datetime,
+  update_by varchar(64),
+  update_time datetime,
+  remark varchar(500)
+);
+CREATE INDEX idx_notice_send ON t_adr_cycle_notice (send_id);
+
+CREATE TABLE t_adr_cycle_calendar (
+  id bigint PRIMARY KEY,
+  holiday date NOT NULL,
+  day_name varchar(64),
+  del_flag int DEFAULT 0,
+  create_by varchar(64),
+  create_time datetime,
+  update_by varchar(64),
+  update_time datetime,
+  remark varchar(500),
+  CONSTRAINT uk_holiday UNIQUE (holiday)
+);
+
 CREATE TABLE t_adr_report_row (
   id bigint PRIMARY KEY,
   booklet_id bigint NOT NULL,
@@ -116,3 +198,47 @@ CREATE TABLE t_adr_report_row (
   CONSTRAINT uk_booklet_row UNIQUE (booklet_id, row_no)
 );
 CREATE INDEX idx_code_phase ON t_adr_report_row (item_code, archive_phase, del_flag);
+
+-- 站内消息通道测试用：用户/公告/公告用户挂接
+CREATE TABLE t_sys_user (
+  id bigint PRIMARY KEY,
+  username varchar(255),
+  password varchar(255),
+  nickname varchar(255),
+  user_type varchar(2),
+  email varchar(50),
+  phonenumber varchar(32),
+  sex char(1),
+  avatar varchar(100),
+  dep_id bigint,
+  pos_id bigint,
+  create_by varchar(64),
+  create_time datetime,
+  update_by varchar(64),
+  update_time datetime,
+  remark varchar(500)
+);
+
+CREATE TABLE t_sys_notice (
+  id bigint PRIMARY KEY,
+  title varchar(255),
+  content varchar(1000),
+  type int,
+  create_by varchar(64),
+  create_time datetime,
+  update_by varchar(64),
+  update_time datetime,
+  remark varchar(500)
+);
+
+CREATE TABLE t_sys_notice_user (
+  id bigint PRIMARY KEY,
+  notice_id bigint,
+  user_id bigint,
+  state bigint,
+  create_by varchar(64),
+  create_time datetime,
+  update_by varchar(64),
+  update_time datetime,
+  remark varchar(500)
+);

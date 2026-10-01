@@ -802,6 +802,8 @@ CREATE TABLE `t_sys_quartz_job`  (
 -- Records of t_sys_quartz_job
 -- ----------------------------
 INSERT INTO `t_sys_quartz_job` VALUES (332182389491109888, 'v2Task2', 'SYSTEM', 'v2Task.runTask2(1,2l,\'asa\',true,2D)', '*/5 * * * * ?', '2', '0', 1, NULL, NULL, NULL, NULL, NULL);
+-- 定期安全性更新报告催送轮：系统照日子跑（禁并发 1；状态 0 正常启用；每半小时一轮，班段/岁末切法在服务内把关）
+INSERT INTO `t_sys_quartz_job` VALUES (332182389491109889, 'adrCycleTask', 'SYSTEM', 'v2Task.runAdrCycleTask()', '0 0/30 * * * ?', '2', '1', 0, 'seed', SYSDATE(), NULL, NULL, '定期安全性更新报告催送轮，服务器算定再落库；空轮回本轮无到期条目');
 
 -- ----------------------------
 -- Table structure for t_sys_quartz_job_log

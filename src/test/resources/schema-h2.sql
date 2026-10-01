@@ -5,6 +5,64 @@ DROP TABLE IF EXISTS t_adr_check_period;
 DROP TABLE IF EXISTS t_adr_term_card;
 DROP TABLE IF EXISTS t_adr_case_flow;
 DROP TABLE IF EXISTS t_adr_org_arch;
+DROP TABLE IF EXISTS t_adr_cycle_dispatch;
+DROP TABLE IF EXISTS t_adr_cycle_task;
+DROP TABLE IF EXISTS t_adr_duty_holiday;
+
+CREATE TABLE t_adr_cycle_task (
+  id bigint PRIMARY KEY,
+  item_no varchar(64),
+  site_no varchar(64),
+  category varchar(64),
+  due_at datetime,
+  amount decimal(12,2),
+  content varchar(255),
+  contact varchar(128),
+  sent_at datetime,
+  fail_reason varchar(255),
+  status int,
+  del_flag int DEFAULT 0,
+  create_by varchar(64),
+  create_time datetime,
+  update_by varchar(64),
+  update_time datetime,
+  remark varchar(500)
+);
+CREATE INDEX idx_cycle_status ON t_adr_cycle_task (status, del_flag, due_at);
+CREATE INDEX idx_cycle_site ON t_adr_cycle_task (site_no);
+
+CREATE TABLE t_adr_cycle_dispatch (
+  id bigint PRIMARY KEY,
+  task_id bigint NOT NULL,
+  item_no varchar(64),
+  kind int NOT NULL DEFAULT 0,
+  channel int,
+  delivered int NOT NULL DEFAULT 0,
+  delivered_at datetime,
+  round_at datetime,
+  del_flag int DEFAULT 0,
+  create_by varchar(64),
+  create_time datetime,
+  update_by varchar(64),
+  update_time datetime,
+  remark varchar(500)
+);
+CREATE INDEX idx_dispatch_task ON t_adr_cycle_dispatch (task_id, kind);
+
+CREATE TABLE t_adr_duty_holiday (
+  id bigint PRIMARY KEY,
+  holiday_date datetime NOT NULL,
+  holiday_name varchar(64),
+  status int NOT NULL DEFAULT 0,
+  del_flag int NOT NULL DEFAULT 0,
+  create_by varchar(64),
+  create_time datetime,
+  update_by varchar(64),
+  update_time datetime,
+  remark varchar(500)
+);
+CREATE INDEX idx_holiday_date ON t_adr_duty_holiday (holiday_date, del_flag, status);
+
 
 CREATE TABLE t_adr_case_flow (
   id bigint PRIMARY KEY,

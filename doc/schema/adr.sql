@@ -21,18 +21,61 @@ CREATE TABLE IF NOT EXISTS t_adr_case_flow (
 CREATE TABLE IF NOT EXISTS t_adr_cycle_task (
   id bigint NOT NULL COMMENT '主键',
   item_no varchar(64) DEFAULT NULL COMMENT '定期报告催送单号',
-  due_at datetime DEFAULT NULL COMMENT '该动手那一日的止点时刻',
-  amount decimal(12,2) DEFAULT NULL COMMENT '提前几日开口催送',
-  content varchar(255) DEFAULT NULL COMMENT '事由与被催单位记要',
-  status int DEFAULT NULL COMMENT '条目情形 0未开口 1已催出 2催不成',
+  site_no varchar(64) DEFAULT NULL COMMENT '被催报告单位底册代号(=t_adr_org_arch.site_no)',
+  category varchar(64) DEFAULT NULL COMMENT '事由属于哪一类',
+  due_at datetime DEFAULT NULL COMMENT '应当出手那一日的止点时刻(含当日最后一刻,钉死不许后挪)',
+  amount decimal(12,2) DEFAULT NULL COMMENT '可提前几日开口催送(唯一能调的一栏)',
+  content varchar(255) DEFAULT NULL COMMENT '事由与办法照哪一份写',
+  contact varchar(128) DEFAULT NULL COMMENT '联系人/联系方式(整季空着即转催不成)',
+  sent_at datetime DEFAULT NULL COMMENT '真正催出那一刻(催成钉上,撤回不许盖)',
+  fail_reason varchar(255) DEFAULT NULL COMMENT '催不成缘故(就地落在本条)',
+  status int DEFAULT NULL COMMENT '条目情形 0候催 1已催出 2催不成',
   del_flag int DEFAULT '0' COMMENT '删除标记 0正常 1删除',
   create_by varchar(64) DEFAULT NULL COMMENT '创建者',
   create_time datetime DEFAULT NULL COMMENT '创建时间',
   update_by varchar(64) DEFAULT NULL COMMENT '更新者',
   update_time datetime DEFAULT NULL COMMENT '更新时间',
   remark varchar(500) DEFAULT NULL COMMENT '备注',
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  KEY idx_cycle_status (status, del_flag, due_at),
+  KEY idx_cycle_site (site_no)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='定期报告催送单';
+
+-- 催送触达流水：站内消息/短信息各记各的送达；撤回另落一笔留痕，不许盖头回定的日子与催出刻。
+CREATE TABLE IF NOT EXISTS t_adr_cycle_dispatch (
+  id bigint NOT NULL COMMENT '主键',
+  task_id bigint NOT NULL COMMENT '催送单(=t_adr_cycle_task.id)',
+  item_no varchar(64) DEFAULT NULL COMMENT '催送单号(落账时带上)',
+  kind int NOT NULL DEFAULT 0 COMMENT '流水种类 0催送触达 1撤回留痕',
+  channel int DEFAULT NULL COMMENT '触达道次 0值守人站内消息 1短信息(撤回留痕时为空)',
+  delivered int NOT NULL DEFAULT 0 COMMENT '送达情形 0未达 1已达(两道各记各的,头一条没落不许拿第二条顶)',
+  delivered_at datetime DEFAULT NULL COMMENT '实际送达时刻',
+  round_at datetime DEFAULT NULL COMMENT '本轮执行时刻',
+  del_flag int DEFAULT '0' COMMENT '删除标记 0正常 1删除',
+  create_by varchar(64) DEFAULT NULL COMMENT '创建者',
+  create_time datetime DEFAULT NULL COMMENT '创建时间',
+  update_by varchar(64) DEFAULT NULL COMMENT '更新者',
+  update_time datetime DEFAULT NULL COMMENT '更新时间',
+  remark varchar(500) DEFAULT NULL COMMENT '备注(撤回缘故等)',
+  PRIMARY KEY (id),
+  KEY idx_dispatch_task (task_id, kind)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='催送触达与撤回流水';
+
+-- 法定节假日册：在册日子值守整场不发声，到期也只压着候下一轮。
+CREATE TABLE IF NOT EXISTS t_adr_duty_holiday (
+  id bigint NOT NULL COMMENT '主键',
+  holiday_date datetime NOT NULL COMMENT '法定节假日当日(按日认)',
+  holiday_name varchar(64) DEFAULT NULL COMMENT '节名',
+  status int NOT NULL DEFAULT 0 COMMENT '情形 0现行 1停用',
+  del_flag int NOT NULL DEFAULT 0 COMMENT '删除标记 0正常 1删除',
+  create_by varchar(64) DEFAULT NULL COMMENT '创建者',
+  create_time datetime DEFAULT NULL COMMENT '创建时间',
+  update_by varchar(64) DEFAULT NULL COMMENT '更新者',
+  update_time datetime DEFAULT NULL COMMENT '更新时间',
+  remark varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (id),
+  KEY idx_holiday_date (holiday_date, del_flag, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='值守法定节假日册';
 
 CREATE TABLE IF NOT EXISTS t_adr_org_arch (
   id bigint NOT NULL COMMENT '主键',
